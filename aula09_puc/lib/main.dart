@@ -53,7 +53,7 @@ class _HomeState extends State<Home> {
   }
 
   // Método para inserir um novo usuário no banco de dados
-  _salvarDados(BuildContext context, String nome, int idade) async {
+  _salvarDados(BuildContext context, String nome, int idade, String matricula, String curso) async {
     Database db = await _recuperarBD();
 
     // Dados a serem inseridos, representados como um mapa
@@ -224,8 +224,13 @@ class _HomeState extends State<Home> {
             ),
             ElevatedButton(
               onPressed: () {
-                _salvarDados(context, _nomeController.text,
-                    int.tryParse(_idadeController.text) ?? 0);
+                _salvarDados(
+                  context,
+                  _nomeController.text,
+                  int.tryParse(_idadeController.text) ?? 0,
+                  _matriculaController.text,
+                  _cursoController.text,
+                );
               },
               child: const Text("Salvar um usuário"),
             ),
