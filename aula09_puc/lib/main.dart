@@ -38,8 +38,11 @@ class _HomeState extends State<Home> {
       onCreate: (db, dbVersaoRecente) {
         // SQL para criar a tabela 'usuarios' com colunas de ID, nome e idade
         String sql = "CREATE TABLE usuarios ("
-            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-            "nome VARCHAR, idade INTEGER)";
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "matricula TEXT UNIQUE, "
+        "nome TEXT, "
+        "idade INTEGER, "
+        "curso TEXT)";
         db.execute(sql);
       },
     );
