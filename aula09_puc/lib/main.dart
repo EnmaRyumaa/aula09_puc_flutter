@@ -176,6 +176,8 @@ class _HomeState extends State<Home> {
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _idadeController = TextEditingController();
   final TextEditingController _idController = TextEditingController();
+  final TextEditingController _matriculaController = TextEditingController();
+  final TextEditingController _cursoController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -211,6 +213,14 @@ class _HomeState extends State<Home> {
               ),
             ),
             const SizedBox(height: 10),
+            TextField(
+              controller: _matriculaController,
+              decoration: InputDecoration(label: Text("Digite a matrícula:")),
+            ),
+            TextField(
+              controller: _cursoController,
+              decoration: InputDecoration(label: Text("Digite o nome do curso:")),
+            ),
             ElevatedButton(
               onPressed: () {
                 _salvarDados(context, _nomeController.text,
