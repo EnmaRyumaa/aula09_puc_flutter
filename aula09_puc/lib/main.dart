@@ -25,53 +25,45 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  // Método para recuperar ou abrir o banco de dados
   _recuperarBD() async {
-    // Obtém o caminho onde o banco de dados será salvo no dispositivo
     final caminho = await getDatabasesPath();
     final local = join(caminho, "bancodados.db");
 
-    // Abre o banco de dados e cria a tabela 'usuarios' se ainda não existir
     var retorno = await openDatabase(
       local,
       version: 1,
       onCreate: (db, dbVersaoRecente) {
-        // SQL para criar a tabela 'usuarios' com colunas de ID, nome e idade
         String sql = "CREATE TABLE usuarios ("
-        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-        "matricula TEXT UNIQUE, "
-        "nome TEXT, "
-        "idade INTEGER, "
-        "curso TEXT)";
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "matricula TEXT UNIQUE, "
+            "nome TEXT, "
+            "idade INTEGER, "
+            "curso TEXT)";
         db.execute(sql);
       },
     );
 
-    print("Aberto ${retorno.isOpen.toString()}");
-
     return retorno;
   }
 
-  // Método para inserir um novo usuário no banco de dados
   _salvarDados(BuildContext context, String nome, int idade, String matricula, String curso) async {
     Database db = await _recuperarBD();
 
-    // Dados a serem inseridos, representados como um mapa
-   Map<String, dynamic> dadosUsuario = {
-    "matricula": matricula,
-    "nome": nome,
-    "idade": idade,
-    "curso": curso,
-  };
-    // Insere os dados na tabela 'usuarios' e retorna o ID do novo registro
-    int id = await db.insert("usuarios", dadosUsuario);
-    print("Salvo $id");
+    Map<String, dynamic> dadosUsuario = {
+      "matricula": matricula,
+      "nome": nome,
+      "idade": idade,
+      "curso": curso,
+    };
 
-    // Exibe um diálogo para o usuário confirmar que o registro foi salvo
-    _mostrarDialogo(context, "Usuário salvo com sucesso!");
+    try {
+      int id = await db.insert("usuarios", dadosUsuario);
+      _mostrarDialogo(context, "Usuário salvo com sucesso!");
+    } catch (e) {
+      _mostrarDialogo(context, "Erro ao salvar: Matrícula já cadastrada.");
+    }
   }
 
-  // Método para exibir diálogos de confirmação e mensagens
   _mostrarDialogo(BuildContext context, String mensagem) {
     showDialog(
       context: context,
@@ -92,64 +84,46 @@ class _HomeState extends State<Home> {
     );
   }
 
-  // Método para listar todos os usuários armazenados no banco de dados
   _listarUsuarios() async {
     Database db = await _recuperarBD();
-    String sql = "SELECT * FROM usuarios";
-    List usuarios = await db.rawQuery(sql);
-
-    // Imprime os dados de cada usuário listado no banco
+    List usuarios = await db.rawQuery("SELECT * FROM usuarios");
     for (var usu in usuarios) {
-      print(
-          " id: ${usu['id'].toString()} nome: ${usu['nome']} idade: ${usu['idade']}");
+      print("Matricula: ${usu['matricula']}, Nome: ${usu['nome']}, Idade: ${usu['idade']}, Curso: ${usu['curso']}");
     }
   }
 
-  // Método para listar um usuário específico com base no ID
-  _listarUmUsuario(BuildContext context, int id) async {
+  _listarUmUsuario(BuildContext context, String matricula) async {
     Database db = await _recuperarBD();
-
-    // Faz a consulta na tabela 'usuarios' com o ID fornecido
     List usuarios = await db.query(
       "usuarios",
-      columns: ["id", "nome", "idade"],
-      where: "id = ?",
-      whereArgs: [id],
+      columns: ["matricula", "nome", "idade", "curso"],
+      where: "matricula = ?",
+      whereArgs: [matricula],
     );
 
-    // Verifica se o usuário existe e exibe um diálogo com as informações
     if (usuarios.isNotEmpty) {
       var usuario = usuarios.first;
       _mostrarDialogo(context,
-          "ID: ${usuario['id']} \nNome: ${usuario['nome']} \nIdade: ${usuario['idade']}");
+          "Matrícula: ${usuario['matricula']} \nNome: ${usuario['nome']} \nIdade: ${usuario['idade']} \nCurso: ${usuario['curso']}");
     } else {
-      _mostrarDialogo(context, "Usuário com ID $id não encontrado.");
+      _mostrarDialogo(context, "Usuário com matrícula $matricula não encontrado.");
     }
   }
 
-  // Método para excluir um usuário com base no ID
-  _excluirUsuario(BuildContext context, int id) async {
+  _excluirUsuario(BuildContext context, String matricula) async {
     Database db = await _recuperarBD();
-
-    // Exclui o registro de acordo com o ID fornecido
     int retorno = await db.delete(
       "usuarios",
-      where: "id = ?",
-      whereArgs: [id],
+      where: "matricula = ?",
+      whereArgs: [matricula],
     );
 
-    print("Itens excluídos: $retorno");
-
-    // Exibe um diálogo para confirmar a exclusão
-    _mostrarDialogo(context, "Usuário com ID $id excluído com sucesso.");
+    _mostrarDialogo(context, "Usuário com matrícula $matricula excluído com sucesso.");
   }
 
-  // Método para atualizar informações de um usuário existente
-  _atualizarUsuario(
-      BuildContext context, int id, String? nome, int? idade) async {
+  _atualizarUsuario(BuildContext context, String matricula, String? nome, int? idade, String? curso) async {
     Database db = await _recuperarBD();
 
-    // Cria um mapa para atualizar os dados somente dos campos não nulos
     Map<String, dynamic> dadosUsuario = {};
     if (nome != null && nome.isNotEmpty) {
       dadosUsuario["nome"] = nome;
@@ -157,18 +131,19 @@ class _HomeState extends State<Home> {
     if (idade != null) {
       dadosUsuario["idade"] = idade;
     }
+    if (curso != null && curso.isNotEmpty) {
+      dadosUsuario["curso"] = curso;
+    }
 
-    // Realiza a atualização caso existam campos para modificar
     if (dadosUsuario.isNotEmpty) {
       int retorno = await db.update(
         "usuarios",
         dadosUsuario,
-        where: "id = ?",
-        whereArgs: [id],
+        where: "matricula = ?",
+        whereArgs: [matricula],
       );
 
-      print("Itens atualizados: $retorno");
-      _mostrarDialogo(context, "Usuário com ID $id atualizado com sucesso.");
+      _mostrarDialogo(context, "Usuário com matrícula $matricula atualizado com sucesso.");
     } else {
       _mostrarDialogo(context, "Nenhuma informação para atualizar.");
     }
@@ -176,128 +151,92 @@ class _HomeState extends State<Home> {
 
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _idadeController = TextEditingController();
-  final TextEditingController _idController = TextEditingController();
   final TextEditingController _matriculaController = TextEditingController();
   final TextEditingController _cursoController = TextEditingController();
+  final TextEditingController _matriculaFiltroController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
         alignment: Alignment.center,
-        child: Column(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              margin: const EdgeInsets.all(0.5),
-              width: 300,
-              alignment: Alignment.center,
-              child: TextField(
-                controller: _nomeController,
-                decoration: const InputDecoration(
-                  label: Text("Digite o nome:"),
-                ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              campoTexto(_nomeController, "Digite o nome:"),
+              campoTexto(_idadeController, "Digite a idade:", numero: true),
+              campoTexto(_matriculaController, "Digite a matrícula:"),
+              campoTexto(_cursoController, "Digite o nome do curso:"),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  _salvarDados(
+                    context,
+                    _nomeController.text,
+                    int.tryParse(_idadeController.text) ?? 0,
+                    _matriculaController.text,
+                    _cursoController.text,
+                  );
+                },
+                child: const Text("Salvar um usuário"),
               ),
-            ),
-            const Padding(padding: EdgeInsets.all(10)),
-            Container(
-              margin: const EdgeInsets.all(0.5),
-              width: 300,
-              alignment: Alignment.center,
-              child: TextField(
-                controller: _idadeController,
-                decoration: const InputDecoration(
-                  label: Text("Digite a idade:"),
-                ),
-                keyboardType: TextInputType.number,
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: _listarUsuarios,
+                child: const Text("Listar todos usuários"),
               ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _matriculaController,
-              decoration: InputDecoration(label: Text("Digite a matrícula:")),
-            ),
-            TextField(
-              controller: _cursoController,
-              decoration: InputDecoration(label: Text("Digite o nome do curso:")),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                _salvarDados(
-                  context,
-                  _nomeController.text,
-                  int.tryParse(_idadeController.text) ?? 0,
-                  _matriculaController.text,
-                  _cursoController.text,
-                );
-              },
-              child: const Text("Salvar um usuário"),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: _listarUsuarios,
-              child: const Text("Listar todos usuários"),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              margin: const EdgeInsets.all(0.5),
-              width: 300,
-              alignment: Alignment.center,
-              child: TextField(
-                controller: _idController,
-                decoration: const InputDecoration(
-                  label: Text(
-                      "Digite o ID do usuário para listar/excluir/atualizar:"),
-                ),
-                keyboardType: TextInputType.number,
+              campoTexto(_matriculaFiltroController, "Digite a matrícula para listar/excluir/atualizar:"),
+              ElevatedButton(
+                onPressed: () {
+                  if (_matriculaFiltroController.text.isNotEmpty) {
+                    _listarUmUsuario(context, _matriculaFiltroController.text);
+                  } else {
+                    _mostrarDialogo(context, "Por favor, insira uma matrícula válida para listar.");
+                  }
+                },
+                child: const Text("Listar um usuário"),
               ),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {
-                int? id = int.tryParse(_idController.text);
-                if (id != null) {
-                  _listarUmUsuario(context, id);
-                } else {
-                  _mostrarDialogo(
-                      context, "Por favor, insira um ID válido para listar.");
-                }
-              },
-              child: const Text("Listar um usuário"),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {
-                int? id = int.tryParse(_idController.text);
-                if (id != null) {
-                  _excluirUsuario(context, id);
-                } else {
-                  _mostrarDialogo(
-                      context, "Por favor, insira um ID válido para excluir.");
-                }
-              },
-              child: const Text("Excluir usuário"),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {
-                int? id = int.tryParse(_idController.text);
-                if (id != null) {
-                  String? nome = _nomeController.text.isNotEmpty
-                      ? _nomeController.text
-                      : null;
+              ElevatedButton(
+                onPressed: () {
+                  if (_matriculaFiltroController.text.isNotEmpty) {
+                    _excluirUsuario(context, _matriculaFiltroController.text);
+                  } else {
+                    _mostrarDialogo(context, "Por favor, insira uma matrícula válida para excluir.");
+                  }
+                },
+                child: const Text("Excluir usuário"),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  String? nome = _nomeController.text.isNotEmpty ? _nomeController.text : null;
                   int? idade = int.tryParse(_idadeController.text);
-                  _atualizarUsuario(context, id, nome, idade);
-                } else {
-                  _mostrarDialogo(context,
-                      "Por favor, insira um ID válido para atualizar.");
-                }
-              },
-              child: const Text("Atualizar usuário"),
-            ),
-          ],
+                  String? curso = _cursoController.text.isNotEmpty ? _cursoController.text : null;
+
+                  if (_matriculaFiltroController.text.isNotEmpty) {
+                    _atualizarUsuario(context, _matriculaFiltroController.text, nome, idade, curso);
+                  } else {
+                    _mostrarDialogo(context, "Por favor, insira uma matrícula válida para atualizar.");
+                  }
+                },
+                child: const Text("Atualizar usuário"),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget campoTexto(TextEditingController controller, String label, {bool numero = false}) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      width: 300,
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(labelText: label),
+        keyboardType: numero ? TextInputType.number : TextInputType.text,
       ),
     );
   }
