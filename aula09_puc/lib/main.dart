@@ -57,11 +57,12 @@ class _HomeState extends State<Home> {
     Database db = await _recuperarBD();
 
     // Dados a serem inseridos, representados como um mapa
-    Map<String, dynamic> dadosUsuario = {
-      "nome": nome,
-      "idade": idade,
-    };
-
+   Map<String, dynamic> dadosUsuario = {
+    "matricula": matricula,
+    "nome": nome,
+    "idade": idade,
+    "curso": curso,
+  };
     // Insere os dados na tabela 'usuarios' e retorna o ID do novo registro
     int id = await db.insert("usuarios", dadosUsuario);
     print("Salvo $id");
